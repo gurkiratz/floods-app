@@ -2,6 +2,7 @@
 
 import PledgeForm from './pledge-form'
 import Header from './header'
+import ProgressBar from './progress-bar'
 
 export default function HeroSection() {
   return (
@@ -42,6 +43,9 @@ export default function HeroSection() {
                   Over 1,200 homes lost, 5,000+ families displaced
                 </p>
               </div>
+
+              {/* Progress Bar */}
+              <ProgressBar />
             </div>
 
             {/* Pledge Form */}
