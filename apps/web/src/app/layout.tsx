@@ -1,41 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "../index.css";
-import Providers from "@/components/providers";
-import Header from "@/components/header";
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
+import '../index.css'
+import Providers from '@/components/providers'
+import Header from '@/components/header'
 
 const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+})
 
 const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-	title: "floods-app",
-	description: "floods-app",
-};
+  title: 'Punjab Flood Relief - Rebuild Homes for Families',
+  description:
+    'Help rebuild homes for flood-affected families in Punjab. Each home provides 2 rooms, 800 sq ft - a safe place for a family to restart their lives.',
+}
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-	return (
-		<html lang="en" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
-				<Providers>
-					<div className="grid grid-rows-[auto_1fr] h-svh">
-						<Header />
-						{children}
-					</div>
-				</Providers>
-			</body>
-		</html>
-	);
+  return (
+    <html lang="en" suppressHydrationWarning className="dark">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">{children}</main>
+          </div>
+        </Providers>
+      </body>
+    </html>
+  )
 }
