@@ -4,6 +4,16 @@ import { useQuery } from 'convex/react'
 import { api } from '@floods-app/backend/convex/_generated/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+// Utility function to format Indian currency
+const formatIndianCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
 export default function TopPledgersTable() {
   const topPledgers = useQuery(api.pledges.getTopPledgers, { limit: 5 }) ?? []
   const totalPledgers = useQuery(api.pledges.getAllPledges)?.length ?? 0
@@ -48,7 +58,10 @@ export default function TopPledgersTable() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-sm">
+                <p className="font-semibold text-sm text-green-600 dark:text-green-400">
+                  {formatIndianCurrency(pledger.pledgeAmount)}
+                </p>
+                <p className="text-xs text-muted-foreground">
                   {pledger.housesToSponsor} house
                   {pledger.housesToSponsor !== 1 ? 's' : ''}
                 </p>

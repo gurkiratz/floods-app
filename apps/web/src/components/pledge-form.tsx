@@ -10,6 +10,18 @@ import { api } from '@floods-app/backend/convex/_generated/api'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+// Constants
+const HOUSE_PRICE = 600000 // ₹6,00,000 per house
+const MIN_AMOUNT = 50000 // ₹50,000 minimum
+
+// Predefined amounts
+const PREDEFINED_AMOUNTS = [
+  { amount: 100000, label: '₹1,00,000', description: '1/6 house' },
+  { amount: 300000, label: '₹3,00,000', description: '1/2 house' },
+  { amount: 600000, label: '₹6,00,000', description: '1 full house' },
+  { amount: 1200000, label: '₹12,00,000', description: '2 houses' },
+]
+
 // Zod validation schema
 const pledgeSchema = z.object({
   name: z
@@ -30,19 +42,13 @@ const pledgeSchema = z.object({
       const phoneRegex = /^(\+91[\s-]?)?[0]?[6-9]\d{9}$/
       return phoneRegex.test(val.replace(/[\s-]/g, ''))
     }, 'Please enter a valid Indian phone number (e.g., +91 98765 43210 or 9876543210)'),
-  housesToSponsor: z
-    .string()
-    .regex(/^\d+$/, 'Must be a valid number')
-    .transform((val) => parseInt(val, 10))
-    .refine((val) => val >= 1, 'Number of houses must be at least 1'),
-  customHouses: z
-    .string()
-    .optional()
-    .refine((val) => {
-      if (!val || val.trim() === '') return true
-      const num = parseInt(val)
-      return !isNaN(num) && num >= 11
-    }, 'Custom house count must be 11 or more'),
+  pledgeAmount: z
+    .number()
+    .min(
+      MIN_AMOUNT,
+      `Minimum pledge amount is ₹${MIN_AMOUNT.toLocaleString('en-IN')}`
+    )
+    .max(100000000, 'Maximum pledge amount is ₹10,00,00,000'), // 10 crores max
   message: z
     .string()
     .max(500, 'Message must be less than 500 characters')
@@ -53,8 +59,8 @@ type FormData = {
   name: string
   email: string
   phone: string
-  housesToSponsor: string
-  customHouses: string
+  pledgeAmount: string
+  customAmount: string
   message: string
 }
 
@@ -62,13 +68,46 @@ type ValidationErrors = {
   [K in keyof FormData]?: string
 }
 
+// Utility functions
+const formatIndianCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const calculateHouses = (amount: number): number => {
+  const rawHouses = amount / HOUSE_PRICE
+  // Round to 2 decimal places if it's a decimal, otherwise keep as whole number
+  return rawHouses % 1 === 0 ? rawHouses : Math.round(rawHouses * 100) / 100
+}
+
+const formatHouseDescription = (houses: number): string => {
+  if (houses < 1) {
+    const fraction = Math.round(houses * 6)
+    return `${fraction}/6 house`
+  } else if (houses === 1) {
+    return '1 complete house'
+  } else if (houses < 2) {
+    const wholePart = Math.floor(houses)
+    const fractionalPart = houses - wholePart
+    const fraction = Math.round(fractionalPart * 6)
+    return `${wholePart} house + ${fraction}/6 house`
+  } else {
+    const rounded = Math.round(houses * 10) / 10
+    return `${rounded} houses`
+  }
+}
+
 export default function PledgeForm() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     phone: '',
-    housesToSponsor: '1',
-    customHouses: '',
+    pledgeAmount: '100000', // Default to ₹1,00,000
+    customAmount: '',
     message: '',
   })
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
@@ -76,6 +115,13 @@ export default function PledgeForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const createPledge = useMutation(api.pledges.createPledge)
+
+  const getCurrentAmount = (): number => {
+    if (formData.pledgeAmount === 'custom') {
+      return parseInt(formData.customAmount) || 0
+    }
+    return parseInt(formData.pledgeAmount) || 0
+  }
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     let formattedValue = value
@@ -118,30 +164,17 @@ export default function PledgeForm() {
         }
         break
 
-      case 'housesToSponsor':
-        // Handle special case for "more" option
-        if (value === 'more') {
-          formattedValue = 'more'
-        } else {
-          // Allow only numbers and limit to reasonable range
-          formattedValue = value.replace(/[^\d]/g, '')
-          const numValue = parseInt(formattedValue)
-          if (numValue > 10) {
-            formattedValue = '10'
-          } else if (formattedValue === '' || numValue < 1) {
-            formattedValue = '1'
-          }
-          // Clear custom houses when selecting from dropdown
-          setFormData((prev) => ({ ...prev, customHouses: '' }))
+      case 'pledgeAmount':
+        formattedValue = value
+        // Clear custom amount when selecting predefined amount
+        if (value !== 'custom') {
+          setFormData((prev) => ({ ...prev, customAmount: '' }))
         }
         break
 
-      case 'customHouses':
-        // Allow only numbers for custom houses
+      case 'customAmount':
+        // Allow only numbers
         formattedValue = value.replace(/[^\d]/g, '')
-        if (formattedValue !== '' && parseInt(formattedValue) < 11) {
-          formattedValue = '11'
-        }
         break
 
       case 'email':
@@ -167,13 +200,15 @@ export default function PledgeForm() {
 
   const validateForm = (): boolean => {
     try {
-      // Create validation data with the correct house count
+      // Create validation data with the correct amount
+      const currentAmount = getCurrentAmount()
+
       const validationData = {
-        ...formData,
-        housesToSponsor:
-          formData.housesToSponsor === 'more'
-            ? formData.customHouses
-            : formData.housesToSponsor,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        pledgeAmount: currentAmount,
+        message: formData.message,
       }
 
       pledgeSchema.parse(validationData)
@@ -206,21 +241,22 @@ export default function PledgeForm() {
     setIsSubmitting(true)
 
     try {
+      const currentAmount = getCurrentAmount()
+
       // Parse and validate data one more time for type safety
-      const submitData = {
-        ...formData,
-        housesToSponsor:
-          formData.housesToSponsor === 'more'
-            ? formData.customHouses
-            : formData.housesToSponsor,
-      }
-      const validatedData = pledgeSchema.parse(submitData)
+      const validatedData = pledgeSchema.parse({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        pledgeAmount: currentAmount,
+        message: formData.message,
+      })
 
       await createPledge({
         name: validatedData.name,
         email: validatedData.email,
         phone: validatedData.phone || undefined,
-        housesToSponsor: validatedData.housesToSponsor,
+        pledgeAmount: validatedData.pledgeAmount,
         message: validatedData.message || undefined,
       })
 
@@ -235,11 +271,16 @@ export default function PledgeForm() {
   }
 
   if (isSubmitted) {
-    const shareMessage = `I just pledged to help rebuild homes for flood-affected families in Punjab. Each home provides a safe place for a family to restart their lives. Join me in making a difference! 🏠❤️`
+    const currentAmount = getCurrentAmount()
+    const houses = calculateHouses(currentAmount)
+    const shareMessage = `I just pledged ${formatIndianCurrency(
+      currentAmount
+    )} to help rebuild homes for flood-affected families in Punjab. This will sponsor ${formatHouseDescription(
+      houses
+    )}. Join me in making a difference! 🏠❤️`
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
       shareMessage
     )}`
-    const instagramUrl = `https://www.instagram.com/` // Instagram doesn't support direct text sharing via URL
 
     return (
       <Card className="w-full max-w-md">
@@ -263,9 +304,17 @@ export default function PledgeForm() {
             <h3 className="text-xl font-semibold">
               Thank you, {formData.name}.
             </h3>
-            <p className="text-muted-foreground">
-              Our team will contact you soon with next steps.
-            </p>
+            <div className="space-y-2">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {formatIndianCurrency(currentAmount)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Your contribution will sponsor {formatHouseDescription(houses)}
+              </p>
+              <p className="text-muted-foreground">
+                Our team will contact you soon with next steps.
+              </p>
+            </div>
 
             <div className="pt-4 space-y-3">
               <p className="text-sm font-medium">Spread the word:</p>
@@ -313,6 +362,9 @@ export default function PledgeForm() {
       </Card>
     )
   }
+
+  const currentAmount = getCurrentAmount()
+  const houses = calculateHouses(currentAmount)
 
   return (
     <Card className="w-full max-w-md">
@@ -394,54 +446,69 @@ export default function PledgeForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="houses">Number of Houses to Sponsor</Label>
+            <Label htmlFor="amount">Pledge Amount *</Label>
             <select
-              id="houses"
-              value={formData.housesToSponsor}
+              id="amount"
+              value={formData.pledgeAmount}
               onChange={(e) =>
-                handleInputChange('housesToSponsor', e.target.value)
+                handleInputChange('pledgeAmount', e.target.value)
               }
               className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.housesToSponsor
+                validationErrors.pledgeAmount
                   ? 'border-red-500 focus-visible:ring-red-500'
                   : 'border-input focus-visible:ring-ring'
               }`}
             >
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num.toString()}>
-                  {num} {num === 1 ? 'House' : 'Houses'}
+              {PREDEFINED_AMOUNTS.map((option) => (
+                <option key={option.amount} value={option.amount.toString()}>
+                  {option.label} - {option.description}
                 </option>
               ))}
-              <option value="more">More than 10 houses</option>
+              <option value="custom">Custom amount</option>
             </select>
-            {validationErrors.housesToSponsor && (
+            {validationErrors.pledgeAmount && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {validationErrors.housesToSponsor}
+                {validationErrors.pledgeAmount}
               </p>
             )}
 
-            {formData.housesToSponsor === 'more' && (
+            {formData.pledgeAmount === 'custom' && (
               <div className="mt-2">
                 <Input
                   type="number"
-                  value={formData.customHouses}
+                  value={formData.customAmount}
                   onChange={(e) =>
-                    handleInputChange('customHouses', e.target.value)
+                    handleInputChange('customAmount', e.target.value)
                   }
-                  placeholder="Enter number of houses (minimum 11)"
-                  min="11"
+                  placeholder={`Enter amount (minimum ₹${MIN_AMOUNT.toLocaleString(
+                    'en-IN'
+                  )})`}
+                  min={MIN_AMOUNT}
                   className={
-                    validationErrors.customHouses
+                    validationErrors.customAmount
                       ? 'border-red-500 focus-visible:ring-red-500'
                       : ''
                   }
                   inputMode="numeric"
                 />
-                {validationErrors.customHouses && (
+                {validationErrors.customAmount && (
                   <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    {validationErrors.customHouses}
+                    {validationErrors.customAmount}
                   </p>
                 )}
+              </div>
+            )}
+
+            {currentAmount > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-md">
+                <div className="text-center space-y-1">
+                  <p className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                    {formatIndianCurrency(currentAmount)}
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    This will sponsor {formatHouseDescription(houses)}
+                  </p>
+                </div>
               </div>
             )}
           </div>

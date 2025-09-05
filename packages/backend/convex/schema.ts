@@ -1,16 +1,17 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
 
 export default defineSchema({
-	todos: defineTable({
-		text: v.string(),
-		completed: v.boolean(),
-	}),
-	pledges: defineTable({
-		name: v.string(),
-		email: v.string(),
-		phone: v.optional(v.string()),
-		housesToSponsor: v.number(),
-		message: v.optional(v.string()),
-	}),
-});
+  todos: defineTable({
+    text: v.string(),
+    completed: v.boolean(),
+  }),
+  pledges: defineTable({
+    name: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    pledgeAmount: v.number(), // Amount in rupees
+    housesToSponsor: v.number(), // Decimal number of houses (calculated from amount)
+    message: v.optional(v.string()),
+  }),
+})
