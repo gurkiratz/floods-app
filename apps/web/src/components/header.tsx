@@ -20,19 +20,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header
-      className=" top-0 z-50 py-2 w-full transition-all duration-300"
-      style={{
-        backgroundColor: isScrolled ? undefined : 'transparent',
-        borderBottom: isScrolled ? undefined : 'none',
-        backdropFilter: isScrolled ? 'blur(8px)' : 'none',
-        ...(isScrolled && {
-          backgroundColor: 'hsl(var(--background) / 0.95)',
-          borderBottomWidth: '1px',
-          borderBottomColor: 'hsl(var(--border))',
-        }),
-      }}
-    >
+    <header className="rounded-xl m-4 z-50 py-2 transition-all duration-300 bg-white/5 backdrop-blur-xs ">
       <div
         className="container mx-auto flex h-16 items-center justify-between px-4"
         style={{ backgroundColor: 'transparent' }}

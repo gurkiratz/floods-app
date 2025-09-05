@@ -8,13 +8,58 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMutation } from 'convex/react'
 import { api } from '@floods-app/backend/convex/_generated/api'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
-interface FormData {
+// Zod validation schema
+const pledgeSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  email: z
+    .string()
+    .email('Please enter a valid email address')
+    .max(255, 'Email must be less than 255 characters'),
+  phone: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === '') return true
+      // Indian phone number validation: supports +91, 0, or direct 10-digit numbers
+      const phoneRegex = /^(\+91[\s-]?)?[0]?[6-9]\d{9}$/
+      return phoneRegex.test(val.replace(/[\s-]/g, ''))
+    }, 'Please enter a valid Indian phone number (e.g., +91 98765 43210 or 9876543210)'),
+  housesToSponsor: z
+    .string()
+    .regex(/^\d+$/, 'Must be a valid number')
+    .transform((val) => parseInt(val, 10))
+    .refine((val) => val >= 1, 'Number of houses must be at least 1'),
+  customHouses: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === '') return true
+      const num = parseInt(val)
+      return !isNaN(num) && num >= 11
+    }, 'Custom house count must be 11 or more'),
+  message: z
+    .string()
+    .max(500, 'Message must be less than 500 characters')
+    .optional(),
+})
+
+type FormData = {
   name: string
   email: string
   phone: string
   housesToSponsor: string
+  customHouses: string
   message: string
+}
+
+type ValidationErrors = {
+  [K in keyof FormData]?: string
 }
 
 export default function PledgeForm() {
@@ -23,28 +68,160 @@ export default function PledgeForm() {
     email: '',
     phone: '',
     housesToSponsor: '1',
+    customHouses: '',
     message: '',
   })
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const createPledge = useMutation(api.pledges.createPledge)
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    let formattedValue = value
+
+    // Apply field-specific formatting and restrictions
+    switch (field) {
+      case 'name':
+        // Allow only letters, spaces, and common name characters
+        formattedValue = value.replace(/[^a-zA-Z\s'-]/g, '')
+        break
+
+      case 'phone':
+        // Remove all non-numeric characters except +
+        const cleaned = value.replace(/[^\d+]/g, '')
+
+        // Format Indian phone number
+        if (cleaned.startsWith('+91')) {
+          // Format: +91 XXXXX XXXXX
+          const digits = cleaned.slice(3)
+          if (digits.length <= 5) {
+            formattedValue = `+91 ${digits}`
+          } else if (digits.length <= 10) {
+            formattedValue = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`
+          } else {
+            formattedValue = `+91 ${digits.slice(0, 5)} ${digits.slice(5, 10)}`
+          }
+        } else if (cleaned.startsWith('+')) {
+          // Keep other country codes as is but limit length
+          formattedValue = cleaned.slice(0, 15)
+        } else {
+          // Format domestic number: XXXXX XXXXX
+          const digits = cleaned.replace(/^0+/, '') // Remove leading zeros
+          if (digits.length <= 5) {
+            formattedValue = digits
+          } else if (digits.length <= 10) {
+            formattedValue = `${digits.slice(0, 5)} ${digits.slice(5)}`
+          } else {
+            formattedValue = `${digits.slice(0, 5)} ${digits.slice(5, 10)}`
+          }
+        }
+        break
+
+      case 'housesToSponsor':
+        // Handle special case for "more" option
+        if (value === 'more') {
+          formattedValue = 'more'
+        } else {
+          // Allow only numbers and limit to reasonable range
+          formattedValue = value.replace(/[^\d]/g, '')
+          const numValue = parseInt(formattedValue)
+          if (numValue > 10) {
+            formattedValue = '10'
+          } else if (formattedValue === '' || numValue < 1) {
+            formattedValue = '1'
+          }
+          // Clear custom houses when selecting from dropdown
+          setFormData((prev) => ({ ...prev, customHouses: '' }))
+        }
+        break
+
+      case 'customHouses':
+        // Allow only numbers for custom houses
+        formattedValue = value.replace(/[^\d]/g, '')
+        if (formattedValue !== '' && parseInt(formattedValue) < 11) {
+          formattedValue = '11'
+        }
+        break
+
+      case 'email':
+        // Basic email formatting (remove spaces)
+        formattedValue = value.replace(/\s/g, '').toLowerCase()
+        break
+
+      case 'message':
+        // Limit message length
+        if (value.length > 500) {
+          formattedValue = value.slice(0, 500)
+        }
+        break
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: formattedValue }))
+
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  const validateForm = (): boolean => {
+    try {
+      // Create validation data with the correct house count
+      const validationData = {
+        ...formData,
+        housesToSponsor:
+          formData.housesToSponsor === 'more'
+            ? formData.customHouses
+            : formData.housesToSponsor,
+      }
+
+      pledgeSchema.parse(validationData)
+      setValidationErrors({})
+      return true
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: ValidationErrors = {}
+        error.issues.forEach((issue: z.ZodIssue) => {
+          const field = issue.path[0] as keyof FormData
+          if (field && !errors[field]) {
+            errors[field] = issue.message
+          }
+        })
+        setValidationErrors(errors)
+      }
+      return false
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before submitting.')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
+      // Parse and validate data one more time for type safety
+      const submitData = {
+        ...formData,
+        housesToSponsor:
+          formData.housesToSponsor === 'more'
+            ? formData.customHouses
+            : formData.housesToSponsor,
+      }
+      const validatedData = pledgeSchema.parse(submitData)
+
       await createPledge({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        housesToSponsor: parseInt(formData.housesToSponsor),
-        message: formData.message || undefined,
+        name: validatedData.name,
+        email: validatedData.email,
+        phone: validatedData.phone || undefined,
+        housesToSponsor: validatedData.housesToSponsor,
+        message: validatedData.message || undefined,
       })
 
       setIsSubmitted(true)
@@ -153,7 +330,19 @@ export default function PledgeForm() {
               onChange={(e) => handleInputChange('name', e.target.value)}
               required
               placeholder="Enter your full name"
+              className={
+                validationErrors.name
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : ''
+              }
+              maxLength={100}
+              autoComplete="name"
             />
+            {validationErrors.name && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationErrors.name}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -165,7 +354,19 @@ export default function PledgeForm() {
               onChange={(e) => handleInputChange('email', e.target.value)}
               required
               placeholder="your.email@example.com"
+              className={
+                validationErrors.email
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : ''
+              }
+              maxLength={255}
+              autoComplete="email"
             />
+            {validationErrors.email && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationErrors.email}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -176,7 +377,20 @@ export default function PledgeForm() {
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               placeholder="+91 98765 43210"
+              className={
+                validationErrors.phone
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : ''
+              }
+              maxLength={15}
+              autoComplete="tel"
+              inputMode="numeric"
             />
+            {validationErrors.phone && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationErrors.phone}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -187,25 +401,75 @@ export default function PledgeForm() {
               onChange={(e) =>
                 handleInputChange('housesToSponsor', e.target.value)
               }
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                validationErrors.housesToSponsor
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : 'border-input focus-visible:ring-ring'
+              }`}
             >
               {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
                 <option key={num} value={num.toString()}>
                   {num} {num === 1 ? 'House' : 'Houses'}
                 </option>
               ))}
+              <option value="more">More than 10 houses</option>
             </select>
+            {validationErrors.housesToSponsor && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationErrors.housesToSponsor}
+              </p>
+            )}
+
+            {formData.housesToSponsor === 'more' && (
+              <div className="mt-2">
+                <Input
+                  type="number"
+                  value={formData.customHouses}
+                  onChange={(e) =>
+                    handleInputChange('customHouses', e.target.value)
+                  }
+                  placeholder="Enter number of houses (minimum 11)"
+                  min="11"
+                  className={
+                    validationErrors.customHouses
+                      ? 'border-red-500 focus-visible:ring-red-500'
+                      : ''
+                  }
+                  inputMode="numeric"
+                />
+                {validationErrors.customHouses && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    {validationErrors.customHouses}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Your Message</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="message">Your Message</Label>
+              <span className="text-xs text-muted-foreground">
+                {formData.message.length}/500
+              </span>
+            </div>
             <textarea
               id="message"
               value={formData.message}
               onChange={(e) => handleInputChange('message', e.target.value)}
               placeholder="Any additional message or requirements..."
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                validationErrors.message
+                  ? 'border-red-500 focus-visible:ring-red-500'
+                  : 'border-input focus-visible:ring-ring'
+              }`}
+              maxLength={500}
             />
+            {validationErrors.message && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {validationErrors.message}
+              </p>
+            )}
           </div>
 
           <Button

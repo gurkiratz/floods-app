@@ -29,13 +29,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning className="light">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
           <div className="min-h-screen flex flex-col">
-            <Header />
             <main className="flex-1">{children}</main>
           </div>
         </Providers>
