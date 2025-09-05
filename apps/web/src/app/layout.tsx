@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: 'Punjab Flood Relief - Rebuild Homes for Families',
   description:
     'Help rebuild homes for flood-affected families in Punjab. Each home provides 2 rooms, 800 sq ft - a safe place for a family to restart their lives.',
+  icons: {
+    icon: '/gobalsikhs-logo.svg',
+  },
 }
 
 export default function RootLayout({
