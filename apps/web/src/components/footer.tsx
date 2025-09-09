@@ -74,7 +74,7 @@ export default function Footer() {
 
             <div className="pt-4">
               <p className="text-xs text-muted-foreground">
-                © 2025 Punjab Flood Relief. All rights reserved.
+                © 2025 Global Sikhs. All rights reserved.
               </p>
             </div>
           </div>

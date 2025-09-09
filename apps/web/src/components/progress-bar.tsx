@@ -20,8 +20,12 @@ export default function ProgressBar({ goal = 500 }: ProgressBarProps) {
           {goal} houses goal
         </h3>
         <p className="text-lg text-white/90">
-          <span className="font-semibold text-2xl">{totalHouses}</span> / {goal}{' '}
-          houses secured
+          <span className="font-semibold text-2xl">
+            {totalHouses % 1 === 0
+              ? totalHouses.toString()
+              : totalHouses.toFixed(2)}
+          </span>{' '}
+          / {goal} houses secured
         </p>
       </div>
 
