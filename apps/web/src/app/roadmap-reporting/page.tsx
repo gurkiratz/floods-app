@@ -1,3 +1,5 @@
+import { PledgeToImpact, SupportSLAs } from '@/components/sections/reporting-sections'
+
 export default function RoadmapReportingPage() {
   return (
     <div className="container mx-auto px-4 py-12 space-y-10">
@@ -8,19 +10,8 @@ export default function RoadmapReportingPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {[
-          {title:'Allocation & selection',desc:'Criteria-based selection with community oversight and vulnerability scoring.'},
-          {title:'Milestone tracking',desc:'Foundation, structure, finishing—each with dated photo/video evidence.'},
-          {title:'Financial reporting',desc:'Material and labor costs broken down by home and phase.'},
-        ].map((item, i) => (
-          <div key={i} className="p-6 border rounded-lg">
-            <div className="aspect-video w-full bg-muted/40 rounded mb-3 flex items-center justify-center text-xs text-muted-foreground">Illustration placeholder</div>
-            <div className="text-lg font-semibold">{item.title}</div>
-            <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
-          </div>
-        ))}
-      </div>
+      <PledgeToImpact />
+      <SupportSLAs />
 
       <div>
         <h2 className="text-xl font-semibold">Public reporting page</h2>
