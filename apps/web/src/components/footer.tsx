@@ -41,7 +41,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Social Links */}
+          {/* Links / Social */}
           <div className="space-y-4">
             <h3 className="font-semibold">Connect With Us</h3>
             <div className="flex space-x-4">
@@ -70,6 +70,15 @@ export default function Footer() {
                 </svg>
                 <span>WhatsApp</span>
               </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-6 text-sm">
+              <Link href="/vision" className="text-muted-foreground hover:text-foreground">Vision</Link>
+              <Link href="/timeline" className="text-muted-foreground hover:text-foreground">Timeline</Link>
+              <Link href="/roadmap-reporting" className="text-muted-foreground hover:text-foreground">Roadmap & Reporting</Link>
+              <Link href="/in-kind-donations" className="text-muted-foreground hover:text-foreground">In-Kind Donations</Link>
+              <Link href="/about" className="text-muted-foreground hover:text-foreground">About</Link>
+              <Link href="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link>
             </div>
 
             <div className="pt-4">

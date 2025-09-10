@@ -283,7 +283,7 @@ export default function PledgeForm() {
     )}`
 
     return (
-      <Card className="w-full max-w-md">
+      <Card id="pledge-form" className="w-full max-w-md">
         <CardContent className="pt-6">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
@@ -367,7 +367,7 @@ export default function PledgeForm() {
   const houses = calculateHouses(currentAmount)
 
   return (
-    <Card className="w-full max-w-md">
+    <Card id="pledge-form" className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl text-center">Make Your Pledge</CardTitle>
       </CardHeader>
