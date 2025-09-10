@@ -29,6 +29,11 @@ import {
   Users,
   Heart,
 } from 'lucide-react'
+import DomeGallery from '@/components/DomeGallery'
+import ShinyText from '@/components/ShinyText'
+import GradientText from '@/components/GradientText'
+import { TextHoverEffect } from '@/components/ui/text-hover-effect'
+import { MorphingText } from '@/components/magicui/morphing-text'
 
 export default function Home() {
   return (
@@ -438,6 +443,23 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Picture Section */}
+      <MorphingText
+        className="mt-12 text-teal-900"
+        texts={['OUR VOLUNTEERS', 'OUR HEROES']}
+      />
+
+      <div style={{ width: '100vw', height: '100vh' }} className="mt-12">
+        <DomeGallery
+          grayscale={false}
+          minRadius={1000}
+          autoRotate={true}
+          autoRotateSpeed={0.1}
+          fit={1}
+          autoRotatePauseOnHover={true}
+        />
+      </div>
 
       {/* Footer */}
       <Footer />

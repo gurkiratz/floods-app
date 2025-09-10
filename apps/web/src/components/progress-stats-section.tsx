@@ -76,7 +76,7 @@ export default function ProgressStatsSection() {
   }, [recentPledges, displayedPledgeIds, hasInitialized])
 
   return (
-    <section className="py-20 bg-gradient-to-b from-muted/30 to-background">
+    <section className="pt-20 bg-gradient-to-b from-muted/30 to-background">
       <div className="container mx-auto px-4">
         <div className="flex justify-center">
           <TopPledgersTable />
