@@ -23,7 +23,7 @@ export default function TopPledgersTable() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
           <CardTitle className="text-center text-lg">
-            0 people have pledged and counting
+            0 people have pledged
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -39,7 +39,8 @@ export default function TopPledgersTable() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="text-center text-lg">
-          {totalPledgers} people have pledged and counting
+          {totalPledgers} {totalPledgers === 1 ? 'person has' : 'people have'}{' '}
+          pledged and counting
         </CardTitle>
       </CardHeader>
       <CardContent>
