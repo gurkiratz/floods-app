@@ -1,6 +1,7 @@
 import HeroSection from '@/components/hero-section'
 import Footer from '@/components/footer'
 import ProgressStatsSection from '@/components/progress-stats-section'
+import LandingContent from '@/components/landing-content'
 
 export default function Home() {
   return (
@@ -10,6 +11,9 @@ export default function Home() {
 
       {/* Progress Stats Section */}
       <ProgressStatsSection />
+
+      {/* Below-hero content */}
+      <LandingContent />
 
       {/* Footer */}
       <Footer />
