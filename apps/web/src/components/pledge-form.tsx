@@ -3,8 +3,11 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { useMutation } from 'convex/react'
 import { api } from '@floods-app/backend/convex/_generated/api'
 import { toast } from 'sonner'
@@ -16,10 +19,30 @@ const MIN_AMOUNT = 50000 // ₹50,000 minimum
 
 // Predefined amounts
 const PREDEFINED_AMOUNTS = [
-  { amount: 100000, label: '₹1,00,000', description: '1/6 house' },
-  { amount: 300000, label: '₹3,00,000', description: '1/2 house' },
-  { amount: 600000, label: '₹6,00,000', description: '1 full house' },
-  { amount: 1200000, label: '₹12,00,000', description: '2 houses' },
+  {
+    amount: 100000,
+    label: '₹1,00,000',
+    description: '1/6 house',
+    popular: false,
+  },
+  {
+    amount: 300000,
+    label: '₹3,00,000',
+    description: '1/2 house',
+    popular: false,
+  },
+  {
+    amount: 600000,
+    label: '₹6,00,000',
+    description: '1 complete house',
+    popular: false,
+  },
+  {
+    amount: 1200000,
+    label: '₹12,00,000',
+    description: '2 houses',
+    popular: false,
+  },
 ]
 
 // Zod validation schema
@@ -283,36 +306,55 @@ export default function PledgeForm() {
     )}`
 
     return (
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-green-600 dark:text-green-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+      <Card className="w-full max-w-md border-2 border-green-200 dark:border-green-800">
+        <CardContent className="pt-8">
+          <div className="text-center space-y-6">
+            <div className="relative">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                <svg
+                  className="w-10 h-10 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <div className="absolute -top-2 -right-2">
+                <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                  <span className="text-xs">🎉</span>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold">
-              Thank you, {formData.name}.
-            </h3>
-            <div className="space-y-2">
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-foreground">
+                Thank you, {formData.name}!
+              </h3>
+              <Badge
+                variant="outline"
+                className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+              >
+                Pledge Confirmed
+              </Badge>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 rounded-xl p-6 space-y-3">
+              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {formatIndianCurrency(currentAmount)}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base font-medium text-foreground">
                 Your contribution will sponsor {formatHouseDescription(houses)}
               </p>
-              <p className="text-muted-foreground">
-                Our team will contact you soon with next steps.
+              <Separator className="my-3" />
+              <p className="text-sm text-muted-foreground">
+                Our team will contact you within 24 hours with next steps and
+                detailed progress updates.
               </p>
             </div>
 
@@ -367,9 +409,17 @@ export default function PledgeForm() {
   const houses = calculateHouses(currentAmount)
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">Make Your Pledge</CardTitle>
+    <Card className="w-full max-w-md shadow-xl border-2 border-border/50">
+      <CardHeader className="text-center pb-4">
+        <div className="space-y-2">
+          {/* <Badge variant="outline" className="mx-auto w-fit">
+            🏠 Flood Relief
+          </Badge> */}
+          <CardTitle className="text-2xl font-bold">Make Your Pledge</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Help rebuild homes for flood-affected families
+          </p>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -384,8 +434,8 @@ export default function PledgeForm() {
               placeholder="Enter your full name"
               className={
                 validationErrors.name
-                  ? 'border-red-500 focus-visible:ring-red-500'
-                  : ''
+                  ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-red-400'
+                  : 'placeholder:text-muted-foreground/50 border-2 border-muted'
               }
               maxLength={100}
               autoComplete="name"
@@ -408,8 +458,8 @@ export default function PledgeForm() {
               placeholder="your.email@example.com"
               className={
                 validationErrors.email
-                  ? 'border-red-500 focus-visible:ring-red-500'
-                  : ''
+                  ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-red-400'
+                  : 'placeholder:text-muted-foreground/50 border-2 border-muted'
               }
               maxLength={255}
               autoComplete="email"
@@ -431,8 +481,8 @@ export default function PledgeForm() {
               placeholder="+91 98765 43210"
               className={
                 validationErrors.phone
-                  ? 'border-red-500 focus-visible:ring-red-500'
-                  : ''
+                  ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-red-400'
+                  : 'placeholder:text-muted-foreground/50 border-2 border-muted'
               }
               maxLength={15}
               autoComplete="tel"
@@ -445,27 +495,82 @@ export default function PledgeForm() {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount">Pledge Amount *</Label>
-            <select
-              id="amount"
-              value={formData.pledgeAmount}
-              onChange={(e) =>
-                handleInputChange('pledgeAmount', e.target.value)
-              }
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.pledgeAmount
-                  ? 'border-red-500 focus-visible:ring-red-500'
-                  : 'border-input focus-visible:ring-ring'
-              }`}
-            >
+          <div className="space-y-3">
+            <Label htmlFor="amount" className="text-base font-semibold">
+              Pledge Amount *
+            </Label>
+
+            {/* Amount Selection Grid */}
+            <div className="grid grid-cols-2 gap-3">
               {PREDEFINED_AMOUNTS.map((option) => (
-                <option key={option.amount} value={option.amount.toString()}>
-                  {option.label} - {option.description}
-                </option>
+                <div key={option.amount} className="relative">
+                  <Input
+                    type="radio"
+                    id={`amount-${option.amount}`}
+                    name="pledgeAmount"
+                    value={option.amount.toString()}
+                    checked={formData.pledgeAmount === option.amount.toString()}
+                    onChange={(e) =>
+                      handleInputChange('pledgeAmount', e.target.value)
+                    }
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor={`amount-${option.amount}`}
+                    className={`block p-4 rounded-lg border-2 border-muted cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      formData.pledgeAmount === option.amount.toString()
+                        ? 'border-green-500 bg-green-50 dark:bg-green-950/50 shadow-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="text-center space-y-1">
+                      {option.popular && (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs mb-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                        >
+                          Popular
+                        </Badge>
+                      )}
+                      <p className="font-bold text-lg">{option.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {option.description}
+                      </p>
+                    </div>
+                  </label>
+                </div>
               ))}
-              <option value="custom">Custom amount</option>
-            </select>
+            </div>
+
+            {/* Custom Amount Option */}
+            <div className="relative">
+              <Input
+                type="radio"
+                id="amount-custom"
+                name="pledgeAmount"
+                value="custom"
+                checked={formData.pledgeAmount === 'custom'}
+                onChange={(e) =>
+                  handleInputChange('pledgeAmount', e.target.value)
+                }
+                className="sr-only"
+              />
+              <label
+                htmlFor="amount-custom"
+                className={`block p-4 rounded-lg border-2 border-muted cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  formData.pledgeAmount === 'custom'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-950/50 shadow-md'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <div className="text-center">
+                  <p className="font-bold">Custom Amount</p>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your own amount
+                  </p>
+                </div>
+              </label>
+            </div>
             {validationErrors.pledgeAmount && (
               <p className="text-sm text-red-600 dark:text-red-400">
                 {validationErrors.pledgeAmount}
@@ -486,8 +591,8 @@ export default function PledgeForm() {
                   min={MIN_AMOUNT}
                   className={
                     validationErrors.customAmount
-                      ? 'border-red-500 focus-visible:ring-red-500'
-                      : ''
+                      ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-red-400'
+                      : 'placeholder:text-muted-foreground/50 border-2 border-muted'
                   }
                   inputMode="numeric"
                 />
@@ -500,13 +605,22 @@ export default function PledgeForm() {
             )}
 
             {currentAmount > 0 && (
-              <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-md">
-                <div className="text-center space-y-1">
-                  <p className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                    {formatIndianCurrency(currentAmount)}
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    This will sponsor {formatHouseDescription(houses)}
+              <div className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-950 dark:to-green-950 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-2xl">🏠</span>
+                    <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                      {formatIndianCurrency(currentAmount)}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                  >
+                    Sponsors {formatHouseDescription(houses)}
+                  </Badge>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Your impact: Safe shelter for displaced families
                   </p>
                 </div>
               </div>
@@ -520,15 +634,15 @@ export default function PledgeForm() {
                 {formData.message.length}/500
               </span>
             </div>
-            <textarea
+            <Textarea
               id="message"
               value={formData.message}
               onChange={(e) => handleInputChange('message', e.target.value)}
               placeholder="Any additional message or requirements..."
-              className={`flex min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`min-h-[80px] ${
                 validationErrors.message
-                  ? 'border-red-500 focus-visible:ring-red-500'
-                  : 'border-input focus-visible:ring-ring'
+                  ? 'border-red-500 focus-visible:ring-red-500 placeholder:text-red-400'
+                  : 'border-2 border-muted placeholder:text-muted-foreground/50'
               }`}
               maxLength={500}
             />
@@ -539,13 +653,29 @@ export default function PledgeForm() {
             )}
           </div>
 
-          <Button
-            type="submit"
-            className="w-full text-lg py-6"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Submitting...' : 'Pledge Now'}
-          </Button>
+          <div className="pt-2">
+            <Button
+              type="submit"
+              className="w-full text-lg py-6 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Submitting Pledge...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Pledge Now</span>
+                  {/* <span className="text-xl">🤝</span> */}
+                </div>
+              )}
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground mt-3">
+              Secure and trusted • Our team will contact you within 24 hours
+            </p>
+          </div>
         </form>
       </CardContent>
     </Card>
